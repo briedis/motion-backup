@@ -3,6 +3,7 @@
 namespace App\Lib;
 
 use ChrisWhite\B2\Client;
+use Exception;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
 
@@ -83,11 +84,17 @@ class FileBackup
 
         $targetPathname = date('Ymd') . '/' . $filename;
 
-        $this->client->upload([
-            'BucketId' => $this->bucket,
-            'FileName' => $targetPathname,
-            'Body' => fopen($sourcePathname, 'r'),
-        ]);
+        try {
+            $this->client->upload([
+                'BucketId' => $this->bucket,
+                'FileName' => $targetPathname,
+                'Body' => fopen($sourcePathname, 'r'),
+            ]);
+        } catch (Exception $e) {
+            \Log::error("Failed to upload " . $targetPathname . " Exception: " . $e->getMessage());
+            $cli->error('Failed to upload: ' . $e->getMessage());
+            return false;
+        }
 
         $cli->info('Done! Took ' . (time() - $started) . ' seconds. Deleting source file.');
 
